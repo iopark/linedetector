@@ -3,15 +3,17 @@
 Straight line segment extractor (FastLineDetector). The same algorithm was upstreamed
 into OpenCV as `ximgproc::FastLineDetector`, so this repo is public research code.
 
-## Standing rule: never push to a remote
+## Standing rule: Claude never publishes
 
-**This repo is local-only.** Local commits and branches are fine. Anything that leaves
-the machine is not — no pushing, no force-pushing, no PR creation, no releases, no
-`send-email`, no creating forks, no adding a remote and publishing to it.
+**Claude does not write to any remote.** Local commits and branches are fine. Anything
+that leaves the machine — pushing, force-pushing, PR creation, releases, forks,
+`send-email` — is the user's step, run from the user's own terminal.
 
-Treat this as prohibited even when asked casually mid-task: say so plainly and stop.
-If publishing is ever genuinely wanted, the user has to say so explicitly and
-unambiguously, and the enforcing hook has to be removed first — in that order.
+Treat a request to publish as prohibited even when it comes casually mid-task: say so
+plainly, prepare everything locally, and hand the user the exact commands. The hook only
+intercepts Claude's tool calls, so the user's terminal is unaffected by it. Claude does
+not remove or route around the hook itself, even with the user's approval; auto mode
+refuses that as self-modification.
 
 This rule is enforced in four places, deliberately:
 
@@ -33,18 +35,18 @@ working around the hook.
 
 ## Branches
 
-Work happens on the local branch `iopark/work`, never on `master`.
+Work happens on `iopark/work`, never on `master`.
 
-- `master` mirrors `cleinc/master`, which is `origin`. Leave it alone.
-- `iopark/work` was cut from it on 2026-10-07 with no upstream configured, so nothing on
-  it tracks cleinc.
-- The work is headed for the user's `iopark` GitHub account, but as of 2026-10-07 there
-  is no `iopark/linedetector` fork (`ildooPark/linedetector` exists, under a different
-  account). Creating that fork is a remote write: the user's step, not Claude's. The
-  standing rule still applies once it exists.
-- Commits are authored with the global git identity, `ildooPark`'s noreply address. If
-  commits on this branch should be attributed to `iopark`, set `user.email` for this repo
-  before the first one; fixing authorship afterwards means rewriting history.
+- `origin` is the user's fork, `iopark/linedetector`. `upstream` is
+  `cleinc/linedetector`, the public original. `master` tracks `upstream/master`; leave
+  it alone.
+- `iopark/work` was cut from `master` on 2026-10-07. The user publishes it to `origin`
+  (see the standing rule).
+- Commits here are authored as `iopark` through a repo-local identity,
+  `52244687+iopark@users.noreply.github.com` (GitHub's private address for that
+  account). The global git identity belongs to `ildooPark`, so keep the local setting.
+- `gh` has two accounts signed in: `ildooPark`, normally active, and `iopark`. Acting on
+  the fork as iopark needs `gh auth switch --user iopark` first.
 
 ## Building
 
