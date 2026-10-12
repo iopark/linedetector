@@ -94,7 +94,7 @@ bool LineDetector::mergeSegments( SEGMENT * seg1, SEGMENT * seg2, SEGMENT * seg_
 	double o[] = { 0.0, 0.0, 1.0 };
 	double a[] = { 0.0, 0.0, 1.0 };
 	double b[] = { 0.0, 0.0, 1.0 };
-	double c[3];
+	double c[3] = { 0.0, 0.0, 0.0 };
 
 	o[0] = ( seg2->x1 + seg2->x2 ) / 2.0;
 	o[1] = ( seg2->y1 + seg2->y2 ) / 2.0;
@@ -143,7 +143,7 @@ void LineDetector::incidentPoint( tType * pt, Mat & l )
 {
 	double a[] = { (double)pt->x, (double)pt->y, 1.0 };
 	double b[] = { l.at<double>(0,0), l.at<double>(1,0), 0.0 };
-	double c[3];
+	double c[3] = { 0.0, 0.0, 0.0 };
 
 	Mat xk = Mat(3, 1, CV_64FC1, a).clone();
 	Mat lh = Mat(3, 1, CV_64FC1, b).clone();
@@ -180,7 +180,7 @@ void LineDetector::extractSegments( vector<Point2i> * points, vector<SEGMENT> * 
 
 		double a[] = { (double)ps.x, (double)ps.y, 1 };
 		double b[] = { (double)pe.x, (double)pe.y, 1 };
-		double c[3], d[3];
+		double c[3] = { 0.0, 0.0, 0.0 }, d[3] = { 0.0, 0.0, 0.0 };
 
 		Mat p1 = Mat(3, 1, CV_64FC1, a).clone();
 		Mat p2 = Mat(3, 1, CV_64FC1, b).clone();
@@ -217,7 +217,7 @@ void LineDetector::extractSegments( vector<Point2i> * points, vector<SEGMENT> * 
 		l_points.push_back(pe);
 
 		Vec4f line;
-		fitLine( Mat(l_points), line, CV_DIST_L2, 0, 0.01, 0.01);
+		fitLine( Mat(l_points), line, DIST_L2, 0, 0.01, 0.01);
 		a[0] = line[2];
 		a[1] = line[3];
 		b[0] = line[2] + line[0];
@@ -249,7 +249,7 @@ void LineDetector::extractSegments( vector<Point2i> * points, vector<SEGMENT> * 
 			pe = pt;
 			l_points.push_back(pt);
 		}
-		fitLine( Mat(l_points), line, CV_DIST_L2, 0, 0.01, 0.01);
+		fitLine( Mat(l_points), line, DIST_L2, 0, 0.01, 0.01);
 		a[0] = line[2];
 		a[1] = line[3];
 		b[0] = line[2] + line[0];
@@ -395,9 +395,16 @@ void LineDetector::lineDetection( Mat & src, vector<SEGMENT> & segments_all, boo
     return;
 
   bool is_merged = false;
-  int ith = segments_tmp.size() - 1;
+  // Fewer than two segments leaves nothing to compare, and the loop below
+  // dereferences both indices before it can test them.
+  if(segments_tmp.size() < 2) {
+    segments_all = segments_tmp;
+    return;
+  }
+
+  int ith = (int)segments_tmp.size() - 1;
   int jth = ith - 1;
-  while(true)
+  while(ith > 0 && jth >= 0)
   {
     seg1 = segments_tmp[ith];
     seg2 = segments_tmp[jth];
@@ -419,8 +426,6 @@ void LineDetector::lineDetection( Mat & src, vector<SEGMENT> & segments_all, boo
       ith--;
       jth = ith - 1;
     }
-    if(ith == 1 && jth == 0)
-      break;
   }
   segments_all = segments_tmp;
 }

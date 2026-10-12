@@ -1,3 +1,3 @@
-cmake_minimum_required(VERSION 2.8)
-project(linedetection)
-subdirs(src)
+cmake_minimum_required(VERSION 3.16)
+project(linedetection CXX)
+add_subdirectory(src)

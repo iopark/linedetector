@@ -1,45 +1,38 @@
-cmake_minimum_required(VERSION 2.8)
-enable_testing()
+# Default to an optimised build when the user did not pick a configuration.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
 
-# make release version
-set(CMAKE_BUILD_TYPE RelWithDebInfo)
-#set(CMAKE_BUILD_TYPE release)
-set(CMAKE_VERBOSE_MAKEFILE yes)
-#set(CMAKE_CXX_FLAGS "-w -g -DNDEBUG")
-set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG")
-set(CMAKE_BUILD_TYPE Release)
-
-find_package(OpenCV PATHS "/usr/local/share/OpenCV")
-include_directories(${OpenCV_INCLUDE_DIRS})
-
-enable_testing()
-if (APPLE)
-  add_definitions(-DAPPLE)
-endif (APPLE)
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-    "${PROJECT_SOURCE_DIR}/cmake_modules/")
-
-# Default locations to search for on various platforms.
-LIST(APPEND SEARCH_LIBS /usr/lib)
-LIST(APPEND SEARCH_LIBS /usr/local/lib)
-LIST(APPEND SEARCH_LIBS /opt/local/lib)
-
-LIST(APPEND SEARCH_HEADERS /usr/include)
-LIST(APPEND SEARCH_HEADERS /usr/local/include)
-LIST(APPEND SEARCH_HEADERS /opt/local/include)
+find_package(OpenCV REQUIRED)
 
 message("-- Check for Google Flags")
-find_library(GFLAGS_LIB NAMES gflags PATHS ${SEARCH_LIBS})
-find_path(GFLAGS_INCLUDE NAMES gflags/gflags.h PATHS ${SEARCH_HEADERS})
+# gflags 2.1 and later ship a CMake config package; fall back to a manual
+# search for older or hand-built installs.
+find_package(gflags CONFIG QUIET)
+if(NOT gflags_FOUND)
+  find_path(GFLAGS_INCLUDE_DIR NAMES gflags/gflags.h)
+  find_library(GFLAGS_LIB NAMES gflags gflags_static)
+  if(NOT GFLAGS_INCLUDE_DIR OR NOT GFLAGS_LIB)
+    message(FATAL_ERROR
+      "Google Flags not found. Install libgflags-dev, or point CMAKE_PREFIX_PATH at it.")
+  endif()
+  add_library(gflags UNKNOWN IMPORTED)
+  set_target_properties(gflags PROPERTIES
+    IMPORTED_LOCATION "${GFLAGS_LIB}"
+    INTERFACE_INCLUDE_DIRECTORIES "${GFLAGS_INCLUDE_DIR}")
+endif()
 
-set(GOOGLE_LIBRARIES ${GFLAGS_LIB})
+add_executable(linedetection linedetection.cpp linedetector.cpp)
 
-include_directories(${linedetection_SOURCE_DIR}/include)
-include_directories(${GFLAGS_INCLUDE})
-include_directories(.)
+target_include_directories(linedetection PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(linedetection PRIVATE ${OpenCV_LIBS} gflags)
 
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
+set_target_properties(linedetection PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED ON
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-add_executable(linedetection linedetection.cpp  linedetector.cpp ) 
-target_link_libraries(linedetection ${GOOGLE_LIBRARIES} ${OpenCV_LIBS})
+if(MSVC)
+  target_compile_definitions(linedetection PRIVATE _CRT_SECURE_NO_WARNINGS NOMINMAX)
+endif()
